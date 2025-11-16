@@ -6,28 +6,41 @@ def plot_fig(fig):
     st.pyplot(fig)
 
 def render_dashboard(df):
-    st.subheader("📈 Top 10 Business-Centric Visual Insights")
+    st.subheader("📈 Top Business-Centric Visual Insights")
 
-    numeric = df.select_dtypes(include="number").columns
+    # Select numeric columns only
+    numeric_df = df.select_dtypes(include=["int64", "float64"])
+
+    if numeric_df.empty:
+        st.warning("No numeric columns found for visualizations.")
+        return
 
     figs = []
 
-    if len(numeric) >= 1:
-        fig, ax = plt.subplots()
-        sns.histplot(df[numeric[0]], kde=True, ax=ax)
-        ax.set_title(f"Distribution of {numeric[0]}")
-        figs.append(fig)
-
-    if len(numeric) >= 2:
-        fig, ax = plt.subplots()
-        sns.scatterplot(x=df[numeric[0]], y=df[numeric[1]], ax=ax)
-        ax.set_title(f"{numeric[0]} vs {numeric[1]}")
-        figs.append(fig)
-
+    # Plot 1 — Histogram of first numeric column
+    col1 = numeric_df.columns[0]
     fig, ax = plt.subplots()
-    sns.heatmap(df.corr(), cmap="coolwarm", annot=False, ax=ax)
-    ax.set_title("Correlation Heatmap")
+    sns.histplot(numeric_df[col1], kde=True, ax=ax)
+    ax.set_title(f"Distribution of {col1}")
     figs.append(fig)
 
+    # Plot 2 — Scatter plot if at least 2 numeric columns exist
+    if len(numeric_df.columns) >= 2:
+        col2 = numeric_df.columns[1]
+        fig, ax = plt.subplots()
+        sns.scatterplot(x=numeric_df[col1], y=numeric_df[col2], ax=ax)
+        ax.set_title(f"{col1} vs {col2}")
+        figs.append(fig)
+
+    # Plot 3 — Correlation heatmap (safe)
+    if len(numeric_df.columns) >= 2:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.heatmap(numeric_df.corr(), cmap="coolwarm", annot=False, ax=ax)
+        ax.set_title("Correlation Heatmap")
+        figs.append(fig)
+    else:
+        st.info("Correlation heatmap requires at least two numeric columns.")
+
+    # Display all figures
     for fig in figs:
         plot_fig(fig)
